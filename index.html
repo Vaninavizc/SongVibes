@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Song Vibes</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    </head>
+    <body>
+
+        <div class="intro">
+            <h1>Your song vibes !</h1>
+            <p>Download your favorite song</p>
+        </div>
+        
+
+        <canvas id="canvas"></canvas>
+
+        <div class="container">
+          <div class="innerContainer">
+            <label id="labelSong">
+            <p>Download song</p>
+              <input type="file" name="song" id="song" accept=".mp3" />
+            </label>
+          </div>
+          <div id="analyser">
+            <div id="music"></div>
+          </div>
+        </div>
+
+        <style>
+        * {
+            padding: 0;
+            margin: 0;
+            outline: none;
+            border: none;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            background-color: #e6e0d6;
+            overflow: hidden;
+        }
+
+        .intro{
+            margin-top: -60px;
+            margin-left: 80px;
+            width: 100%;
+        }
+        
+        .container {
+            position: relative;
+            z-index: 2;
+        }
+
+        #music,
+        #canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        #canvas {
+            position: absolute;
+            z-index: 1;
+            background-color: transparent;
+            opacity: 1;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .innerContainer {
+            display: grid;
+            grid-template-columns: 1fr;
+            justify-items: center;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        p{
+            font-family: Arial, Helvetica, sans-serif;
+            margin-top: 15px;
+        }
+
+        #labelSong {
+            width: 200px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            cursor: pointer;
+            margin: 20px;
+            height: 55px;
+            text-align:center;
+            border: none;
+            background-size: 300% 100%;
+            border-radius: 50px;
+            transition: all .4s ease-in-out;
+            cursor: pointer;
+            background-image: linear-gradient(to right, #ed6ea0, #ec8c69, #f7186a , #FBB03B);
+            box-shadow: 0 4px 15px 0 rgba(236, 116, 149, 0.75);
+        }
+
+        #labelSong:hover {
+            background-position: 100% 0;
+            transition: all .4s ease-in-out;
+        }
+
+
+        </style>
+
+        <script>
+            const song = document.getElementById("song");
+            const music = document.getElementById("music");
+
+            let audio;
+            let canvas;
+            let ctx;
+            let center_x; 
+            let center_y;
+            let radius;
+            let bars;
+            let bar_height;
+            let bar_width;
+            let frequency_array;
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            function() {
+                audio = new Audio();
+                audio.controls = true;
+                audio.autoplay = false;
+                audio.loop = true;
+
+                canvas = document.getElementById("canvas");
+                ctx = canvas.getContext("2d");
+
+                bar_width = 6;
+
+                music.appendChild(audio);
+
+                context = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = context.createAnalyser();
+                source = context.createMediaElementSource(audio);
+                source.connect(analyser);
+                analyser.connect(context.destination);
+                frequency_array = new Uint8Array(analyser.frequencyBinCount);
+
+                song.addEventListener("change", e => {
+                    let reader = new FileReader();
+
+                    context.resume();
+
+                    if (song.files && song.files[0]) {
+                        let reader = new FileReader();
+                        reader.addEventListener("load", e => {
+                            audio.setAttribute("src", e.target.result);
+                        });
+
+                        reader.readAsDataURL(song.files[0]);
+                    }
+                });
+
+                draw();
+            },
+            false
+        );
+
+        function draw() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            center_x = canvas.width / 2;
+            center_y = canvas.height / 2;
+            radius = 200;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.strokeStyle = "black";
+            ctx.beginPath();
+            ctx.arc(center_x, center_y, radius, 0, 6 * Math.PI);
+            ctx.stroke();
+
+            analyser.getByteFrequencyData(frequency_array);
+            bars = 1000 / bar_width;
+            for (let i = 0; i < bars; i++) {
+                rads = (Math.PI * 8) / bars;
+
+                bar_height = frequency_array[i] * 0.75;
+
+                x = center_x + Math.cos(rads * i) * radius;
+                y = center_y + Math.sin(rads * i) * radius;
+                x_end = center_x + Math.cos(rads * i) * (radius + bar_height);
+                y_end = center_y + Math.sin(rads * i) * (radius + bar_height);
+
+                drawBar(x, y, x_end, y_end, bar_width, frequency_array[i]);
+            }
+
+            window.requestAnimationFrame(draw);
+        }
+
+        function drawBar(x1, y1, x2, y2, width, frequency) {
+            let gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, "#ed6ea0");
+            gradient.addColorStop(1, "#ec8c69");
+
+            ctx.strokeStyle = gradient;
+            ctx.lineWidth = width;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+
+        </script>
+
+    </body>
+</html>
